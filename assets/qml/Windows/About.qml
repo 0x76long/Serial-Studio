@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Alex Spataru <https://github.com/alex-spataru>
+ * Copyright (c) 2020-2023 Alex Spataru <https://github.com/alex-spataru>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,12 +20,14 @@
  * THE SOFTWARE.
  */
 
-import QtQuick 2.12
-import QtQuick.Window 2.0
-import QtQuick.Layouts 1.12
-import QtQuick.Controls 2.12
+import QtQuick
+import QtQuick.Window
+import QtQuick.Layouts
+import QtQuick.Controls
 
-Window {
+import "../FramelessWindow" as FramelessWindow
+
+FramelessWindow.CustomWindow {
     id: root
 
     //
@@ -37,22 +39,80 @@ Window {
     // Window options
     //
     title: qsTr("About")
-    minimumWidth: column.implicitWidth + 4 * app.spacing
-    maximumWidth: column.implicitWidth + 4 * app.spacing
-    minimumHeight: column.implicitHeight + 4 * app.spacing
-    maximumHeight: column.implicitHeight + 4 * app.spacing
-    flags: Qt.Dialog | Qt.WindowCloseButtonHint | Qt.WindowTitleHint
+    width: minimumWidth
+    height: minimumHeight
+    x: (Screen.desktopAvailableWidth - width) / 2
+    y: (Screen.desktopAvailableHeight - height) / 2
+    extraFlags: Qt.Dialog | Qt.WindowCloseButtonHint | Qt.WindowTitleHint
+    minimumWidth: column.implicitWidth + 4 * app.spacing + 2 * root.shadowMargin
+    maximumWidth: column.implicitWidth + 4 * app.spacing + 2 * root.shadowMargin
+    minimumHeight: column.implicitHeight + 4 * app.spacing + titlebar.height + 2 * root.shadowMargin
+    maximumHeight: column.implicitHeight + 4 * app.spacing + titlebar.height + 2 * root.shadowMargin
+
+    //
+    // Titlebar options
+    //
+    minimizeEnabled: false
+    maximizeEnabled: false
+    titlebarText: Cpp_ThemeManager.text
+    titlebarColor: Cpp_ThemeManager.dialogBackground
+    backgroundColor: Cpp_ThemeManager.dialogBackground
 
     //
     // Use page item to set application palette
     //
     Page {
-        anchors.margins: 0
-        anchors.fill: parent
-        palette.text: "#fff"
-        palette.buttonText: "#fff"
-        palette.windowText: "#fff"
-        palette.window: app.windowBackgroundColor
+        anchors {
+            fill: parent
+            margins: root.shadowMargin
+            topMargin: titlebar.height + root.shadowMargin
+        }
+
+        palette.alternateBase: Cpp_ThemeManager.base
+        palette.base: Cpp_ThemeManager.base
+        palette.brightText: Cpp_ThemeManager.brightText
+        palette.button: Cpp_ThemeManager.button
+        palette.buttonText: Cpp_ThemeManager.buttonText
+        palette.highlight: Cpp_ThemeManager.highlight
+        palette.highlightedText: Cpp_ThemeManager.highlightedText
+        palette.link: Cpp_ThemeManager.link
+        palette.placeholderText: Cpp_ThemeManager.placeholderText
+        palette.text: Cpp_ThemeManager.text
+        palette.toolTipBase: Cpp_ThemeManager.tooltipBase
+        palette.toolTipText: Cpp_ThemeManager.tooltipText
+        palette.window: Cpp_ThemeManager.window
+        palette.windowText: Cpp_ThemeManager.windowText
+
+        background: Rectangle {
+            radius: root.radius
+            color: root.backgroundColor
+
+            Rectangle {
+                height: root.radius
+                color: root.backgroundColor
+
+                anchors {
+                    top: parent.top
+                    left: parent.left
+                    right: parent.right
+                }
+            }
+        }
+
+        //
+        // Window drag handler
+        //
+        Item {
+            anchors.fill: parent
+
+            MouseArea {
+                anchors.fill: parent
+                onPressedChanged: {
+                    if (pressed)
+                        root.startSystemMove()
+                }
+            }
+        }
 
         //
         // Window controls
@@ -67,11 +127,16 @@ Window {
                 Layout.fillWidth: true
 
                 Image {
-                    width: 96
-                    height: 96
-                    source: "qrc:/images/icon.png"
+                    width: 128
+                    height: 128
                     Layout.alignment: Qt.AlignVCenter
                     sourceSize: Qt.size(width, height)
+                    source: {
+                        if (Screen.pixelDensity >= 2)
+                            return "qrc:/images/icon@2x.png"
+
+                        return "qrc:/images/icon@1x.png"
+                    }
                 }
 
                 ColumnLayout {
@@ -96,7 +161,7 @@ Window {
             Label {
                 opacity: 0.8
                 Layout.fillWidth: true
-                Layout.maximumWidth: 288
+                Layout.maximumWidth: 320
                 wrapMode: Label.WrapAtWordBoundaryOrAnywhere
                 text: qsTr("Copyright © 2020-%1 %2, released under the MIT License.").arg(root.year).arg(Cpp_AppOrganization)
             }
@@ -105,9 +170,9 @@ Window {
                 opacity: 0.8
                 font.pixelSize: 12
                 Layout.fillWidth: true
-                Layout.maximumWidth: 288
-                color: palette.highlightedText
+                Layout.maximumWidth: 320
                 wrapMode: Label.WrapAtWordBoundaryOrAnywhere
+                color: Cpp_ThemeManager.highlightedTextAlternative
                 text: qsTr("The program is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.")
             }
 
@@ -118,13 +183,13 @@ Window {
             Button {
                 Layout.fillWidth: true
                 text: qsTr("Website")
-                onClicked: Qt.openUrlExternally("https://www.alex-spataru.com/serial-studio")
+                onClicked: Qt.openUrlExternally("https://serial-studio.github.io/")
             }
 
             Button {
                 Layout.fillWidth: true
-                text: qsTr("Contact author")
-                onClicked: Qt.openUrlExternally("mailto:alex_spataru@outlook.com")
+                text: qsTr("Make a donation")
+                onClicked: app.donateDialog.show()
             }
 
             Button {
@@ -142,7 +207,7 @@ Window {
             Button {
                 Layout.fillWidth: true
                 text: qsTr("Acknowledgements")
-                onClicked: acknowledgements.show()
+                onClicked: acknowledgementsDialog.show()
             }
 
             Item {
@@ -154,17 +219,6 @@ Window {
                 onClicked: root.close()
                 text: qsTr("Close")
             }
-
-            Item {
-                height: app.spacing
-            }
         }
-    }
-
-    //
-    // Acknowledgements dialog
-    //
-    Acknowledgements {
-        id: acknowledgements
     }
 }

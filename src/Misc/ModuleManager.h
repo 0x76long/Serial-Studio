@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Alex Spataru <https://github.com/alex-spataru>
+ * Copyright (c) 2020-2023 Alex Spataru <https://github.com/alex-spataru>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,32 +20,42 @@
  * THE SOFTWARE.
  */
 
-#ifndef MODULE_MANAGER_H
-#define MODULE_MANAGER_H
+#pragma once
 
 #include <QObject>
 #include <QQmlApplicationEngine>
 
+#include <DataTypes.h>
+
+namespace Misc
+{
+/**
+ * @brief The ModuleManager class
+ *
+ * The @c ModuleManager class is in charge of initializing all the C++ modules that are
+ * part of Serial Studio in the correct order.
+ */
 class ModuleManager : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(bool softwareRendering READ softwareRendering CONSTANT)
+    Q_PROPERTY(bool autoUpdaterEnabled READ autoUpdaterEnabled CONSTANT)
 
 public:
     ModuleManager();
-
-    void configureLogger();
     void configureUpdater();
     void registerQmlTypes();
+    bool softwareRendering();
     bool autoUpdaterEnabled();
     void initializeQmlInterface();
-
     QQmlApplicationEngine *engine();
 
-private slots:
-    void stopOperations();
+public Q_SLOTS:
+    void onQuit();
+    void setSoftwareRenderingEnabled(const bool enabled);
 
 private:
+    bool m_softwareRendering;
     QQmlApplicationEngine m_engine;
 };
-
-#endif
+}

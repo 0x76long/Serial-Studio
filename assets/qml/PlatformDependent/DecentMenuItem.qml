@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Alex Spataru <https://github.com/alex-spataru>
+ * Copyright (c) 2020-2023 Alex Spataru <https://github.com/alex-spataru>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,9 +20,9 @@
  * THE SOFTWARE.
  */
 
-import QtQuick 2.12
-import QtQuick.Layouts 1.12
-import QtQuick.Controls 2.12
+import QtQuick
+import QtQuick.Layouts
+import QtQuick.Controls
 
 MenuItem {
     id: root
@@ -42,14 +42,16 @@ MenuItem {
         opacity: root.enabled ? 1 : 0.5
 
         Item {
-            width: root.indicatorVisible ? root.indicator.width + 4 : 0
+            width: root.indicatorVisible ? 18 : 0
         }
 
         Label {
+            id: _titleLabel
             text: root.text
             Layout.fillWidth: true
             elide: Label.ElideRight
             verticalAlignment: Qt.AlignVCenter
+            color: root.highlighted ? Cpp_ThemeManager.highlightedText : palette.text
         }
 
         Item {
@@ -57,8 +59,11 @@ MenuItem {
         }
 
         Label {
+            id: _shortcutLabel
+            opacity: 0.8
             text: _shortcut.nativeText
             verticalAlignment: Qt.AlignVCenter
+            color: root.highlighted ? Cpp_ThemeManager.highlightedText : palette.text
         }
     }
 }

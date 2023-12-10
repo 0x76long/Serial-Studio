@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Alex Spataru <https://github.com/alex-spataru>
+ * Copyright (c) 2020-2023 Alex Spataru <https://github.com/alex-spataru>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,15 +20,41 @@
  * THE SOFTWARE.
  */
 
-#ifndef IO_MANAGER_H
-#define IO_MANAGER_H
+#pragma once
 
-#include <QTimer>
 #include <QObject>
-#include <QIODevice>
+#include <DataTypes.h>
+#include <IO/HAL_Driver.h>
 
 namespace IO
 {
+/**
+ * @brief The Manager class
+ *
+ * The I/O Manager class provides an abstraction layer between the physical
+ * device (e.g. a serial or network port) and the rest of the application.
+ *
+ * Additionaly, all frame parsing, checksum verification and data processing
+ * is done directly by this class. In this way, programmers can focus on
+ * implementing the code to read and write data to a device, while the manager
+ * class deals with the processing of the received data and generates frames.
+ *
+ * A "frame" is equivalent to a packet of data. To identify frames, the manager
+ * class needs to know three things:
+ * - The start sequence or header of the frame
+ * - The end sequence or footer of the frame
+ * - The data separator sequence, which allows Serial Studio to differentiate
+ *   between a dataset value and another dataset value.
+ *
+ * Example of a frame:
+ *
+ *   $A,B,C,D,E,F,G;
+ *
+ * In this case, the start sequence of the frame is "$", while the end sequence
+ * is ";". The data separator sequence is ",". Knowing this, Serial Studio
+ * can process the frame and deduce that A,B,C,D,E,F and G are individual
+ * dataset values.
+ */
 class Manager : public QObject
 {
     // clang-format off
@@ -44,14 +70,11 @@ class Manager : public QObject
                NOTIFY connectedChanged)
     Q_PROPERTY(bool deviceAvailable
                READ deviceAvailable
-               NOTIFY deviceChanged)
-    Q_PROPERTY(IO::Manager::DataSource dataSource
-               READ dataSource
-               WRITE setDataSource
-               NOTIFY dataSourceChanged)
-    Q_PROPERTY(QString receivedDataLength
-               READ receivedDataLength
-               NOTIFY receivedBytesChanged)
+               NOTIFY driverChanged)
+    Q_PROPERTY(IO::Manager::SelectedDriver selectedDriver
+               READ selectedDriver
+               WRITE setSelectedDriver
+               NOTIFY selectedDriverChanged)
     Q_PROPERTY(QString startSequence
                READ startSequence
                WRITE setStartSequence
@@ -60,94 +83,107 @@ class Manager : public QObject
                READ finishSequence
                WRITE setFinishSequence
                NOTIFY finishSequenceChanged)
+    Q_PROPERTY(QString separatorSequence
+               READ separatorSequence
+               WRITE setSeparatorSequence
+               NOTIFY separatorSequenceChanged)
     Q_PROPERTY(bool configurationOk
                READ configurationOk
                NOTIFY configurationChanged)
     // clang-format on
 
-signals:
-    void tx();
-    void rx();
-    void deviceChanged();
+Q_SIGNALS:
+    void driverChanged();
     void connectedChanged();
-    void watchdogTriggered();
-    void dataSourceChanged();
     void writeEnabledChanged();
     void configurationChanged();
     void receivedBytesChanged();
     void maxBufferSizeChanged();
     void startSequenceChanged();
     void finishSequenceChanged();
-    void watchdogIntervalChanged();
+    void selectedDriverChanged();
+    void separatorSequenceChanged();
     void frameValidationRegexChanged();
     void dataSent(const QByteArray &data);
     void dataReceived(const QByteArray &data);
     void frameReceived(const QByteArray &frame);
 
+private:
+    explicit Manager();
+    Manager(Manager &&) = delete;
+    Manager(const Manager &) = delete;
+    Manager &operator=(Manager &&) = delete;
+    Manager &operator=(const Manager &) = delete;
+
 public:
-    enum class DataSource
+    enum class SelectedDriver
     {
         Serial,
-        Network
+        Network,
+        BluetoothLE
     };
-    Q_ENUM(DataSource)
+    Q_ENUM(SelectedDriver)
 
-    static Manager *getInstance();
+    enum class ValidationStatus
+    {
+        FrameOk,
+        ChecksumError,
+        ChecksumIncomplete
+    };
+    Q_ENUM(ValidationStatus)
+
+    static Manager &instance();
 
     bool readOnly();
     bool readWrite();
     bool connected();
     bool deviceAvailable();
-    bool configurationOk() const;
+    bool configurationOk();
 
     int maxBufferSize() const;
-    int watchdogInterval() const;
 
-    QIODevice *device();
-    DataSource dataSource() const;
+    HAL_Driver *driver();
+    SelectedDriver selectedDriver() const;
 
     QString startSequence() const;
     QString finishSequence() const;
-    QString receivedDataLength() const;
+    QString separatorSequence() const;
 
-    Q_INVOKABLE QStringList dataSourcesList() const;
+    Q_INVOKABLE StringList availableDrivers() const;
     Q_INVOKABLE qint64 writeData(const QByteArray &data);
 
-public slots:
+public Q_SLOTS:
     void connectDevice();
     void toggleConnection();
-    void disconnectDevice();
+    void disconnectDriver();
     void setWriteEnabled(const bool enabled);
-    void setDataSource(const DataSource source);
     void processPayload(const QByteArray &payload);
     void setMaxBufferSize(const int maxBufferSize);
     void setStartSequence(const QString &sequence);
     void setFinishSequence(const QString &sequence);
-    void setWatchdogInterval(const int interval = 15);
+    void setSeparatorSequence(const QString &sequence);
+    void setSelectedDriver(const IO::Manager::SelectedDriver &driver);
 
-private slots:
+private Q_SLOTS:
     void readFrames();
-    void feedWatchdog();
-    void onDataReceived();
     void clearTempBuffer();
-    void onWatchdogTriggered();
-    void setDevice(QIODevice *device);
+    void setDriver(HAL_Driver *driver);
+    void onDataReceived(const QByteArray &data);
 
 private:
-    Manager();
-    ~Manager();
+    ValidationStatus integrityChecks(const QByteArray &frame,
+                                     const QByteArray &masterBuffer, int *bytesToChop);
 
 private:
-    QTimer m_watchdog;
+    bool m_enableCrc;
     bool m_writeEnabled;
-    int m_maxBuzzerSize;
-    QIODevice *m_device;
-    DataSource m_dataSource;
+    int m_maxBufferSize;
+    HAL_Driver *m_driver;
     QByteArray m_dataBuffer;
     quint64 m_receivedBytes;
     QString m_startSequence;
     QString m_finishSequence;
+    QString m_separatorSequence;
+    SelectedDriver m_selectedDriver;
 };
 }
-
-#endif

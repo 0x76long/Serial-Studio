@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Alex Spataru <https://github.com/alex-spataru>
+ * Copyright (c) 2020-2023 Alex Spataru <https://github.com/alex-spataru>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,34 +20,75 @@
  * THE SOFTWARE.
  */
 
-import QtQuick 2.12
-import QtQuick.Window 2.0
-import QtQuick.Layouts 1.12
-import QtQuick.Controls 2.12
+import QtQuick
+import QtQuick.Window
+import QtQuick.Layouts
+import QtQuick.Controls
 
-Window {
+import "../FramelessWindow" as FramelessWindow
+
+FramelessWindow.CustomWindow {
     id: root
 
     //
     // Window options
     //
+    width: minimumWidth
+    height: minimumHeight
+    minimizeEnabled: false
+    maximizeEnabled: false
     title: qsTr("Acknowledgements")
-    minimumWidth: column.implicitWidth + 4 * app.spacing
-    maximumWidth: column.implicitWidth + 4 * app.spacing
-    minimumHeight: column.implicitHeight + 4 * app.spacing
-    maximumHeight: column.implicitHeight + 4 * app.spacing
-    flags: Qt.Dialog | Qt.WindowCloseButtonHint | Qt.WindowTitleHint
+    titlebarText: Cpp_ThemeManager.text
+    x: (Screen.desktopAvailableWidth - width) / 2
+    y: (Screen.desktopAvailableHeight - height) / 2
+    titlebarColor: Cpp_ThemeManager.dialogBackground
+    backgroundColor: Cpp_ThemeManager.dialogBackground
+    extraFlags: Qt.Dialog | Qt.WindowCloseButtonHint | Qt.WindowTitleHint
+    minimumWidth: column.implicitWidth + 4 * app.spacing + 2 * root.shadowMargin
+    maximumWidth: column.implicitWidth + 4 * app.spacing + 2 * root.shadowMargin
+    minimumHeight: column.implicitHeight + 4 * app.spacing + titlebar.height + 2 * root.shadowMargin
+    maximumHeight: column.implicitHeight + 4 * app.spacing + titlebar.height + 2 * root.shadowMargin
 
     //
     // Use page item to set application palette
     //
     Page {
-        anchors.margins: 0
-        anchors.fill: parent
-        palette.text: "#fff"
-        palette.buttonText: "#fff"
-        palette.windowText: "#fff"
-        palette.window: app.windowBackgroundColor
+        anchors {
+            fill: parent
+            margins: root.shadowMargin
+            topMargin: titlebar.height + root.shadowMargin
+        }
+
+        palette.alternateBase: Cpp_ThemeManager.base
+        palette.base: Cpp_ThemeManager.base
+        palette.brightText: Cpp_ThemeManager.brightText
+        palette.button: Cpp_ThemeManager.button
+        palette.buttonText: Cpp_ThemeManager.buttonText
+        palette.highlight: Cpp_ThemeManager.highlight
+        palette.highlightedText: Cpp_ThemeManager.highlightedText
+        palette.link: Cpp_ThemeManager.link
+        palette.placeholderText: Cpp_ThemeManager.placeholderText
+        palette.text: Cpp_ThemeManager.text
+        palette.toolTipBase: Cpp_ThemeManager.tooltipBase
+        palette.toolTipText: Cpp_ThemeManager.tooltipText
+        palette.window: Cpp_ThemeManager.window
+        palette.windowText: Cpp_ThemeManager.windowText
+
+        background: Rectangle {
+            radius: root.radius
+            color: root.backgroundColor
+
+            Rectangle {
+                height: root.radius
+                color: root.backgroundColor
+
+                anchors {
+                    top: parent.top
+                    left: parent.left
+                    right: parent.right
+                }
+            }
+        }
 
         //
         // Window controls

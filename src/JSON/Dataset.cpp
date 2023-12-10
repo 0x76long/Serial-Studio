@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Alex Spataru <https://github.com/alex-spataru>
+ * Copyright (c) 2020-2023 Alex Spataru <https://github.com/alex-spataru>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,33 +20,94 @@
  * THE SOFTWARE.
  */
 
-#include "Dataset.h"
-#include "Generator.h"
+#include <JSON/Dataset.h>
+#include <JSON/Generator.h>
 
-using namespace JSON;
-
-Dataset::Dataset(QObject *parent)
-    : QObject(parent)
+JSON::Dataset::Dataset()
+    : m_fft(false)
+    , m_led(false)
+    , m_log(false)
     , m_graph(false)
     , m_title("")
     , m_value("")
     , m_units("")
     , m_widget("")
+    , m_index(0)
+    , m_max(0)
+    , m_min(0)
+    , m_alarm(0)
+    , m_fftSamples(1024)
 {
+}
+
+/**
+ * @return @c true if the UI should generate a FFT plot of this dataset
+ */
+bool JSON::Dataset::fft() const
+{
+    return m_fft;
+}
+
+/**
+ * @return @c true if the UI should generate a LED of this dataset
+ */
+bool JSON::Dataset::led() const
+{
+    return m_led;
+}
+
+/**
+ * @return @c true if the UI should generate a logarithmic plot of this dataset
+ */
+bool JSON::Dataset::log() const
+{
+    return m_log;
+}
+
+/**
+ * @return the field index represented by the current dataset
+ */
+int JSON::Dataset::index() const
+{
+    return m_index;
 }
 
 /**
  * @return @c true if the UI should graph this dataset
  */
-bool Dataset::graph() const
+bool JSON::Dataset::graph() const
 {
     return m_graph;
 }
 
 /**
+ * Returns the minimum value of the dataset
+ */
+double JSON::Dataset::min() const
+{
+    return m_min;
+}
+
+/**
+ * Returns the maximum value of the dataset
+ */
+double JSON::Dataset::max() const
+{
+    return m_max;
+}
+
+/**
+ * Returns the alarm level of the dataset
+ */
+double JSON::Dataset::alarm() const
+{
+    return m_alarm;
+}
+
+/**
  * @return The title/description of this dataset
  */
-QString Dataset::title() const
+QString JSON::Dataset::title() const
 {
     return m_title;
 }
@@ -54,7 +115,7 @@ QString Dataset::title() const
 /**
  * @return The value/reading of this dataset
  */
-QString Dataset::value() const
+QString JSON::Dataset::value() const
 {
     return m_value;
 }
@@ -62,7 +123,7 @@ QString Dataset::value() const
 /**
  * @return The units of this dataset
  */
-QString Dataset::units() const
+QString JSON::Dataset::units() const
 {
     return m_units;
 }
@@ -70,15 +131,23 @@ QString Dataset::units() const
 /**
  * @return The widget value of this dataset
  */
-QString Dataset::widget() const
+QString JSON::Dataset::widget() const
 {
     return m_widget;
 }
 
 /**
+ * Returns the maximum freq. for the FFT transform
+ */
+int JSON::Dataset::fftSamples() const
+{
+    return qMax(1, m_fftSamples);
+}
+
+/**
  * Returns the JSON data that represents this widget
  */
-QJsonObject Dataset::jsonData() const
+QJsonObject JSON::Dataset::jsonData() const
 {
     return m_jsonData;
 }
@@ -89,38 +158,28 @@ QJsonObject Dataset::jsonData() const
  *
  * @return @c true on read success, @c false on failure
  */
-bool Dataset::read(const QJsonObject &object)
+bool JSON::Dataset::read(const QJsonObject &object)
 {
-    static QJSEngine JAVASCRIPT_ENGINE;
-
     if (!object.isEmpty())
     {
-        auto graph = object.value("g").toVariant().toBool();
-        auto title = object.value("t").toVariant().toString();
-        auto value = object.value("v").toVariant().toString();
-        auto units = object.value("u").toVariant().toString();
-        auto widget = object.value("w").toVariant().toString();
+        m_fft = object.value("fft").toBool();
+        m_led = object.value("led").toBool();
+        m_log = object.value("log").toBool();
+        m_min = object.value("min").toDouble();
+        m_max = object.value("max").toDouble();
+        m_index = object.value("index").toInt();
+        m_alarm = object.value("alarm").toDouble();
+        m_graph = object.value("graph").toBool();
+        m_title = object.value("title").toString();
+        m_value = object.value("value").toString();
+        m_units = object.value("units").toString();
+        m_widget = object.value("widget").toString();
+        m_fftSamples = object.value("fftSamples").toInt();
 
-        title = title.replace("\n", "");
-        title = title.replace("\r", "");
-        value = value.replace("\n", "");
-        value = value.replace("\r", "");
-        units = units.replace("\n", "");
-        units = units.replace("\r", "");
-        widget = widget.replace("\n", "");
-        widget = widget.replace("\r", "");
+        if (m_value.isEmpty())
+            m_value = "--.--";
 
-        if (!value.isEmpty())
-        {
-            m_graph = graph;
-            m_title = title;
-            m_units = units;
-            m_value = value;
-            m_widget = widget;
-            m_jsonData = object;
-
-            return true;
-        }
+        return true;
     }
 
     return false;
