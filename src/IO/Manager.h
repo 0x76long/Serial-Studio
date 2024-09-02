@@ -23,7 +23,6 @@
 #pragma once
 
 #include <QObject>
-#include <DataTypes.h>
 #include <IO/HAL_Driver.h>
 
 namespace IO
@@ -57,133 +56,134 @@ namespace IO
  */
 class Manager : public QObject
 {
-    // clang-format off
-    Q_OBJECT
-    Q_PROPERTY(bool readOnly
-               READ readOnly
-               NOTIFY connectedChanged)
-    Q_PROPERTY(bool readWrite
-               READ readWrite
-               NOTIFY connectedChanged)
-    Q_PROPERTY(bool connected
-               READ connected
-               NOTIFY connectedChanged)
-    Q_PROPERTY(bool deviceAvailable
-               READ deviceAvailable
-               NOTIFY driverChanged)
-    Q_PROPERTY(IO::Manager::SelectedDriver selectedDriver
-               READ selectedDriver
-               WRITE setSelectedDriver
-               NOTIFY selectedDriverChanged)
-    Q_PROPERTY(QString startSequence
-               READ startSequence
-               WRITE setStartSequence
-               NOTIFY startSequenceChanged)
-    Q_PROPERTY(QString finishSequence
-               READ finishSequence
-               WRITE setFinishSequence
-               NOTIFY finishSequenceChanged)
-    Q_PROPERTY(QString separatorSequence
-               READ separatorSequence
-               WRITE setSeparatorSequence
-               NOTIFY separatorSequenceChanged)
-    Q_PROPERTY(bool configurationOk
-               READ configurationOk
-               NOTIFY configurationChanged)
-    // clang-format on
+  // clang-format off
+  Q_OBJECT
+  Q_PROPERTY(bool readOnly
+             READ readOnly
+             NOTIFY connectedChanged)
+  Q_PROPERTY(bool readWrite
+             READ readWrite
+             NOTIFY connectedChanged)
+  Q_PROPERTY(bool connected
+             READ connected
+             NOTIFY connectedChanged)
+  Q_PROPERTY(bool deviceAvailable
+             READ deviceAvailable
+             NOTIFY driverChanged)
+  Q_PROPERTY(IO::Manager::SelectedDriver selectedDriver
+             READ selectedDriver
+             WRITE setSelectedDriver
+             NOTIFY selectedDriverChanged)
+  Q_PROPERTY(QString startSequence
+             READ startSequence
+             WRITE setStartSequence
+             NOTIFY startSequenceChanged)
+  Q_PROPERTY(QString finishSequence
+             READ finishSequence
+             WRITE setFinishSequence
+             NOTIFY finishSequenceChanged)
+  Q_PROPERTY(QString separatorSequence
+             READ separatorSequence
+             WRITE setSeparatorSequence
+             NOTIFY separatorSequenceChanged)
+  Q_PROPERTY(bool configurationOk
+             READ configurationOk
+             NOTIFY configurationChanged)
+  // clang-format on
 
 Q_SIGNALS:
-    void driverChanged();
-    void connectedChanged();
-    void writeEnabledChanged();
-    void configurationChanged();
-    void receivedBytesChanged();
-    void maxBufferSizeChanged();
-    void startSequenceChanged();
-    void finishSequenceChanged();
-    void selectedDriverChanged();
-    void separatorSequenceChanged();
-    void frameValidationRegexChanged();
-    void dataSent(const QByteArray &data);
-    void dataReceived(const QByteArray &data);
-    void frameReceived(const QByteArray &frame);
+  void driverChanged();
+  void connectedChanged();
+  void writeEnabledChanged();
+  void configurationChanged();
+  void receivedBytesChanged();
+  void maxBufferSizeChanged();
+  void startSequenceChanged();
+  void finishSequenceChanged();
+  void selectedDriverChanged();
+  void separatorSequenceChanged();
+  void frameValidationRegexChanged();
+  void dataSent(const QByteArray &data);
+  void dataReceived(const QByteArray &data);
+  void frameReceived(const QByteArray &frame);
 
 private:
-    explicit Manager();
-    Manager(Manager &&) = delete;
-    Manager(const Manager &) = delete;
-    Manager &operator=(Manager &&) = delete;
-    Manager &operator=(const Manager &) = delete;
+  explicit Manager();
+  Manager(Manager &&) = delete;
+  Manager(const Manager &) = delete;
+  Manager &operator=(Manager &&) = delete;
+  Manager &operator=(const Manager &) = delete;
 
 public:
-    enum class SelectedDriver
-    {
-        Serial,
-        Network,
-        BluetoothLE
-    };
-    Q_ENUM(SelectedDriver)
+  enum class SelectedDriver
+  {
+    Serial,
+    Network,
+    BluetoothLE
+  };
+  Q_ENUM(SelectedDriver)
 
-    enum class ValidationStatus
-    {
-        FrameOk,
-        ChecksumError,
-        ChecksumIncomplete
-    };
-    Q_ENUM(ValidationStatus)
+  enum class ValidationStatus
+  {
+    FrameOk,
+    ChecksumError,
+    ChecksumIncomplete
+  };
+  Q_ENUM(ValidationStatus)
 
-    static Manager &instance();
+  static Manager &instance();
 
-    bool readOnly();
-    bool readWrite();
-    bool connected();
-    bool deviceAvailable();
-    bool configurationOk();
+  bool readOnly();
+  bool readWrite();
+  bool connected();
+  bool deviceAvailable();
+  bool configurationOk();
 
-    int maxBufferSize() const;
+  int maxBufferSize() const;
 
-    HAL_Driver *driver();
-    SelectedDriver selectedDriver() const;
+  HAL_Driver *driver();
+  SelectedDriver selectedDriver() const;
 
-    QString startSequence() const;
-    QString finishSequence() const;
-    QString separatorSequence() const;
+  QString startSequence() const;
+  QString finishSequence() const;
+  QString separatorSequence() const;
 
-    Q_INVOKABLE StringList availableDrivers() const;
-    Q_INVOKABLE qint64 writeData(const QByteArray &data);
+  Q_INVOKABLE QStringList availableDrivers() const;
+  Q_INVOKABLE qint64 writeData(const QByteArray &data);
 
 public Q_SLOTS:
-    void connectDevice();
-    void toggleConnection();
-    void disconnectDriver();
-    void setWriteEnabled(const bool enabled);
-    void processPayload(const QByteArray &payload);
-    void setMaxBufferSize(const int maxBufferSize);
-    void setStartSequence(const QString &sequence);
-    void setFinishSequence(const QString &sequence);
-    void setSeparatorSequence(const QString &sequence);
-    void setSelectedDriver(const IO::Manager::SelectedDriver &driver);
+  void connectDevice();
+  void toggleConnection();
+  void disconnectDriver();
+  void setWriteEnabled(const bool enabled);
+  void processPayload(const QByteArray &payload);
+  void setMaxBufferSize(const int maxBufferSize);
+  void setStartSequence(const QString &sequence);
+  void setFinishSequence(const QString &sequence);
+  void setSeparatorSequence(const QString &sequence);
+  void setSelectedDriver(const IO::Manager::SelectedDriver &driver);
 
 private Q_SLOTS:
-    void readFrames();
-    void clearTempBuffer();
-    void setDriver(HAL_Driver *driver);
-    void onDataReceived(const QByteArray &data);
+  void readFrames();
+  void clearTempBuffer();
+  void setDriver(HAL_Driver *driver);
+  void onDataReceived(const QByteArray &data);
 
 private:
-    ValidationStatus integrityChecks(const QByteArray &frame,
-                                     const QByteArray &masterBuffer, int *bytesToChop);
+  ValidationStatus integrityChecks(const QByteArray &frame,
+                                   const QByteArray &masterBuffer,
+                                   int *bytesToChop);
 
 private:
-    bool m_enableCrc;
-    bool m_writeEnabled;
-    int m_maxBufferSize;
-    HAL_Driver *m_driver;
-    QByteArray m_dataBuffer;
-    quint64 m_receivedBytes;
-    QString m_startSequence;
-    QString m_finishSequence;
-    QString m_separatorSequence;
-    SelectedDriver m_selectedDriver;
+  bool m_enableCrc;
+  bool m_writeEnabled;
+  int m_maxBufferSize;
+  HAL_Driver *m_driver;
+  QByteArray m_dataBuffer;
+  quint64 m_receivedBytes;
+  QString m_startSequence;
+  QString m_finishSequence;
+  QString m_separatorSequence;
+  SelectedDriver m_selectedDriver;
 };
-}
+} // namespace IO

@@ -27,7 +27,6 @@
 #include <QLowEnergyController>
 #include <QBluetoothDeviceDiscoveryAgent>
 
-#include <DataTypes.h>
 #include <IO/HAL_Driver.h>
 
 namespace IO
@@ -40,89 +39,89 @@ namespace Drivers
  */
 class BluetoothLE : public HAL_Driver
 {
-    // clang-format off
-    Q_OBJECT
-    Q_PROPERTY(int deviceCount
-               READ deviceCount
-               NOTIFY devicesChanged)
-    Q_PROPERTY(StringList deviceNames
-               READ deviceNames
-               NOTIFY devicesChanged)
-    Q_PROPERTY(StringList serviceNames
-               READ serviceNames
-               NOTIFY servicesChanged)
-    Q_PROPERTY(int deviceIndex
-               READ deviceIndex
-               WRITE selectDevice
-               NOTIFY devicesChanged)
-    Q_PROPERTY(bool isOpen
-               READ isOpen
-               NOTIFY deviceConnectedChanged)
-    Q_PROPERTY(bool operatingSystemSupported
-               READ operatingSystemSupported
-               CONSTANT)
-    // clang-format on
+  // clang-format off
+  Q_OBJECT
+  Q_PROPERTY(int deviceCount
+             READ deviceCount
+             NOTIFY devicesChanged)
+  Q_PROPERTY(QStringList deviceNames
+             READ deviceNames
+             NOTIFY devicesChanged)
+  Q_PROPERTY(QStringList serviceNames
+             READ serviceNames
+             NOTIFY servicesChanged)
+  Q_PROPERTY(int deviceIndex
+             READ deviceIndex
+             WRITE selectDevice
+             NOTIFY devicesChanged)
+  Q_PROPERTY(bool isOpen
+             READ isOpen
+             NOTIFY deviceConnectedChanged)
+  Q_PROPERTY(bool operatingSystemSupported
+             READ operatingSystemSupported
+             CONSTANT)
+  // clang-format on
 
 Q_SIGNALS:
-    void devicesChanged();
-    void servicesChanged();
-    void deviceIndexChanged();
-    void deviceConnectedChanged();
-    void error(const QString &message);
+  void devicesChanged();
+  void servicesChanged();
+  void deviceIndexChanged();
+  void deviceConnectedChanged();
+  void error(const QString &message);
 
 private:
-    explicit BluetoothLE();
-    BluetoothLE(BluetoothLE &&) = delete;
-    BluetoothLE(const BluetoothLE &) = delete;
-    BluetoothLE &operator=(BluetoothLE &&) = delete;
-    BluetoothLE &operator=(const BluetoothLE &) = delete;
+  explicit BluetoothLE();
+  BluetoothLE(BluetoothLE &&) = delete;
+  BluetoothLE(const BluetoothLE &) = delete;
+  BluetoothLE &operator=(BluetoothLE &&) = delete;
+  BluetoothLE &operator=(const BluetoothLE &) = delete;
 
 public:
-    static BluetoothLE &instance();
+  static BluetoothLE &instance();
 
-    //
-    // HAL functions
-    //
-    void close() override;
-    bool isOpen() const override;
-    bool isReadable() const override;
-    bool isWritable() const override;
-    bool configurationOk() const override;
-    quint64 write(const QByteArray &data) override;
-    bool open(const QIODevice::OpenMode mode) override;
+  //
+  // HAL functions
+  //
+  void close() override;
+  bool isOpen() const override;
+  bool isReadable() const override;
+  bool isWritable() const override;
+  bool configurationOk() const override;
+  quint64 write(const QByteArray &data) override;
+  bool open(const QIODevice::OpenMode mode) override;
 
-    int deviceCount() const;
-    int deviceIndex() const;
-    StringList deviceNames() const;
-    StringList serviceNames() const;
-    bool operatingSystemSupported() const;
+  int deviceCount() const;
+  int deviceIndex() const;
+  QStringList deviceNames() const;
+  QStringList serviceNames() const;
+  bool operatingSystemSupported() const;
 
 public Q_SLOTS:
-    void startDiscovery();
-    void selectDevice(const int index);
-    void selectService(const int index);
+  void startDiscovery();
+  void selectDevice(const int index);
+  void selectService(const int index);
 
 private Q_SLOTS:
-    void configureCharacteristics();
-    void onServiceDiscoveryFinished();
-    void onDeviceDiscovered(const QBluetoothDeviceInfo &device);
-    void onServiceError(QLowEnergyService::ServiceError serviceError);
-    void onDiscoveryError(QBluetoothDeviceDiscoveryAgent::Error error);
-    void onServiceStateChanged(QLowEnergyService::ServiceState serviceState);
-    void onCharacteristicChanged(const QLowEnergyCharacteristic &info,
-                                 const QByteArray &value);
+  void configureCharacteristics();
+  void onServiceDiscoveryFinished();
+  void onDeviceDiscovered(const QBluetoothDeviceInfo &device);
+  void onServiceError(QLowEnergyService::ServiceError serviceError);
+  void onDiscoveryError(QBluetoothDeviceDiscoveryAgent::Error error);
+  void onServiceStateChanged(QLowEnergyService::ServiceState serviceState);
+  void onCharacteristicChanged(const QLowEnergyCharacteristic &info,
+                               const QByteArray &value);
 
 private:
-    int m_deviceIndex;
-    bool m_deviceConnected;
+  int m_deviceIndex;
+  bool m_deviceConnected;
 
-    QLowEnergyService *m_service;
-    QLowEnergyController *m_controller;
+  QLowEnergyService *m_service;
+  QLowEnergyController *m_controller;
 
-    StringList m_deviceNames;
-    StringList m_serviceNames;
-    QList<QBluetoothDeviceInfo> m_devices;
-    QBluetoothDeviceDiscoveryAgent m_discoveryAgent;
+  QStringList m_deviceNames;
+  QStringList m_serviceNames;
+  QList<QBluetoothDeviceInfo> m_devices;
+  QBluetoothDeviceDiscoveryAgent m_discoveryAgent;
 };
-}
-}
+} // namespace Drivers
+} // namespace IO

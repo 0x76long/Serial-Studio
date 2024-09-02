@@ -38,14 +38,11 @@
  * Initializes the JSON Parser class and connects appropiate SIGNALS/SLOTS
  */
 JSON::Generator::Generator()
-    : m_opMode(kAutomatic)
+  : m_opMode(kAutomatic)
 {
-    // clang-format off
-    connect(&IO::Manager::instance(), &IO::Manager::frameReceived,
-            this, &JSON::Generator::readData);
-    // clang-format on
-
-    readSettings();
+  connect(&IO::Manager::instance(), &IO::Manager::frameReceived, this,
+          &JSON::Generator::readData);
+  readSettings();
 }
 
 /**
@@ -53,8 +50,8 @@ JSON::Generator::Generator()
  */
 JSON::Generator &JSON::Generator::instance()
 {
-    static Generator singleton;
-    return singleton;
+  static Generator singleton;
+  return singleton;
 }
 
 /**
@@ -62,7 +59,7 @@ JSON::Generator &JSON::Generator::instance()
  */
 QJsonObject &JSON::Generator::json()
 {
-    return m_json;
+  return m_json;
 }
 
 /**
@@ -70,13 +67,13 @@ QJsonObject &JSON::Generator::json()
  */
 QString JSON::Generator::jsonMapFilename() const
 {
-    if (m_jsonMap.isOpen())
-    {
-        auto fileInfo = QFileInfo(m_jsonMap.fileName());
-        return fileInfo.fileName();
-    }
+  if (m_jsonMap.isOpen())
+  {
+    auto fileInfo = QFileInfo(m_jsonMap.fileName());
+    return fileInfo.fileName();
+  }
 
-    return "";
+  return "";
 }
 
 /**
@@ -84,13 +81,13 @@ QString JSON::Generator::jsonMapFilename() const
  */
 QString JSON::Generator::jsonMapFilepath() const
 {
-    if (m_jsonMap.isOpen())
-    {
-        auto fileInfo = QFileInfo(m_jsonMap.fileName());
-        return fileInfo.filePath();
-    }
+  if (m_jsonMap.isOpen())
+  {
+    auto fileInfo = QFileInfo(m_jsonMap.fileName());
+    return fileInfo.filePath();
+  }
 
-    return "";
+  return "";
 }
 
 /**
@@ -98,7 +95,7 @@ QString JSON::Generator::jsonMapFilepath() const
  */
 JSON::Generator::OperationMode JSON::Generator::operationMode() const
 {
-    return m_opMode;
+  return m_opMode;
 }
 
 /**
@@ -106,15 +103,13 @@ JSON::Generator::OperationMode JSON::Generator::operationMode() const
  */
 void JSON::Generator::loadJsonMap()
 {
-    // clang-format off
-    auto file = QFileDialog::getOpenFileName(Q_NULLPTR,
-                                             tr("Select JSON map file"),
-                                             Project::Model::instance().jsonProjectsPath(),
-                                             tr("JSON files") + " (*.json)");
-    // clang-format on
+  const auto file = QFileDialog::getOpenFileName(
+      Q_NULLPTR, tr("Select JSON map file"),
+      Project::Model::instance().jsonProjectsPath(),
+      tr("JSON files") + QStringLiteral(" (*.json)"));
 
-    if (!file.isEmpty())
-        loadJsonMap(file);
+  if (!file.isEmpty())
+    loadJsonMap(file);
 }
 
 /**
@@ -122,59 +117,61 @@ void JSON::Generator::loadJsonMap()
  */
 void JSON::Generator::loadJsonMap(const QString &path)
 {
-    // Validate path
-    if (path.isEmpty())
-        return;
+  // Validate path
+  if (path.isEmpty())
+    return;
 
-    // Close previous file (if open)
-    if (m_jsonMap.isOpen())
+  // Close previous file (if open)
+  if (m_jsonMap.isOpen())
+  {
+    m_jsonMap.close();
+    m_json = QJsonObject();
+    Q_EMIT jsonFileMapChanged();
+  }
+
+  // Try to open the file (read only mode)
+  m_jsonMap.setFileName(path);
+  if (m_jsonMap.open(QFile::ReadOnly))
+  {
+    // Read data & validate JSON from file
+    QJsonParseError error;
+    auto data = m_jsonMap.readAll();
+    auto document = QJsonDocument::fromJson(data, &error);
+    if (error.error != QJsonParseError::NoError)
     {
-        m_jsonMap.close();
-        m_json = QJsonObject();
-        Q_EMIT jsonFileMapChanged();
+      m_jsonMap.close();
+      writeSettings("");
+      Misc::Utilities::showMessageBox(tr("JSON parse error"),
+                                      error.errorString());
     }
 
-    // Try to open the file (read only mode)
-    m_jsonMap.setFileName(path);
-    if (m_jsonMap.open(QFile::ReadOnly))
-    {
-        // Read data & validate JSON from file
-        QJsonParseError error;
-        auto data = m_jsonMap.readAll();
-        auto document = QJsonDocument::fromJson(data, &error);
-        if (error.error != QJsonParseError::NoError)
-        {
-            m_jsonMap.close();
-            writeSettings("");
-            Misc::Utilities::showMessageBox(tr("JSON parse error"), error.errorString());
-        }
-
-        // JSON contains no errors, load compacted JSON document & save settings
-        else
-        {
-            // Save settings
-            writeSettings(path);
-
-            // Load compacted JSON document
-            document.object().remove("frameParser");
-            m_json = document.object();
-        }
-
-        // Get rid of warnings
-        Q_UNUSED(document);
-    }
-
-    // Open error
+    // JSON contains no errors, load compacted JSON document & save settings
     else
     {
-        writeSettings("");
-        Misc::Utilities::showMessageBox(tr("Cannot read JSON file"),
-                                        tr("Please check file permissions & location"));
-        m_jsonMap.close();
+      // Save settings
+      writeSettings(path);
+
+      // Load compacted JSON document
+      document.object().remove(QStringLiteral("frameParser"));
+      m_json = document.object();
     }
 
-    // Update UI
-    Q_EMIT jsonFileMapChanged();
+    // Get rid of warnings
+    Q_UNUSED(document);
+  }
+
+  // Open error
+  else
+  {
+    writeSettings("");
+    Misc::Utilities::showMessageBox(
+        tr("Cannot read JSON file"),
+        tr("Please check file permissions & location"));
+    m_jsonMap.close();
+  }
+
+  // Update UI
+  Q_EMIT jsonFileMapChanged();
 }
 
 /**
@@ -190,10 +187,11 @@ void JSON::Generator::loadJsonMap(const QString &path)
  * @c kAutomatic serial data contains the JSON data frame, good for simple
  *               applications or for prototyping.
  */
-void JSON::Generator::setOperationMode(const JSON::Generator::OperationMode &mode)
+void JSON::Generator::setOperationMode(
+    const JSON::Generator::OperationMode &mode)
 {
-    m_opMode = mode;
-    Q_EMIT operationModeChanged();
+  m_opMode = mode;
+  Q_EMIT operationModeChanged();
 }
 
 /**
@@ -201,9 +199,10 @@ void JSON::Generator::setOperationMode(const JSON::Generator::OperationMode &mod
  */
 void JSON::Generator::readSettings()
 {
-    auto path = m_settings.value("json_map_location", "").toString();
-    if (!path.isEmpty())
-        loadJsonMap(path);
+  auto path
+      = m_settings.value(QStringLiteral("json_map_location"), "").toString();
+  if (!path.isEmpty())
+    loadJsonMap(path);
 }
 
 /**
@@ -211,7 +210,7 @@ void JSON::Generator::readSettings()
  */
 void JSON::Generator::writeSettings(const QString &path)
 {
-    m_settings.setValue("json_map_location", path);
+  m_settings.setValue(QStringLiteral("json_map_location"), path);
 }
 
 /**
@@ -229,67 +228,65 @@ void JSON::Generator::writeSettings(const QString &path)
  */
 void JSON::Generator::readData(const QByteArray &data)
 {
-    // Data empty, abort
-    if (data.isEmpty())
-        return;
+  // Data empty, abort
+  if (data.isEmpty())
+    return;
 
-    // Serial device sends JSON (auto mode)
-    QJsonObject jsonData;
-    if (operationMode() == JSON::Generator::kAutomatic)
-        jsonData = QJsonDocument::fromJson(data).object();
+  // Serial device sends JSON (auto mode)
+  QJsonObject jsonData;
+  if (operationMode() == JSON::Generator::kAutomatic)
+    jsonData = QJsonDocument::fromJson(data).object();
 
-    // Data is separated and parsed by Serial Studio (manual mode)
-    else
+  // Data is separated and parsed by Serial Studio (manual mode)
+  else
+  {
+    // Copy JSON map
+    jsonData = m_json;
+
+    // Get fields from frame parser function
+    auto fields = Project::CodeEditor::instance().parse(
+        QString::fromUtf8(data), IO::Manager::instance().separatorSequence());
+
+    // Replace data in JSON map
+    auto groups = jsonData.value(QStringLiteral("groups")).toArray();
+    for (int i = 0; i < groups.count(); ++i)
     {
-        // Copy JSON map
-        jsonData = m_json;
+      // Get group & list of datasets
+      auto group = groups.at(i).toObject();
+      auto datasets = group.value(QStringLiteral("datasets")).toArray();
 
-        // Get fields from frame parser function
-        auto fields = Project::CodeEditor::instance().parse(
-            QString::fromUtf8(data), IO::Manager::instance().separatorSequence());
+      // Evaluate each dataset
+      for (int j = 0; j < datasets.count(); ++j)
+      {
+        auto dataset = datasets.at(j).toObject();
+        auto index = dataset.value(QStringLiteral("index")).toInt();
 
-        // Replace data in JSON map
-        auto groups = jsonData.value("groups").toArray();
-        for (int i = 0; i < groups.count(); ++i)
+        if (index <= fields.count() && index >= 1)
         {
-            // Get group & list of datasets
-            auto group = groups.at(i).toObject();
-            auto datasets = group.value("datasets").toArray();
+          const auto value = QJsonValue(fields.at(index - 1));
 
-            // Evaluate each dataset
-            for (int j = 0; j < datasets.count(); ++j)
-            {
-                auto dataset = datasets.at(j).toObject();
-                auto index = dataset.value("index").toInt();
-
-                if (index <= fields.count() && index >= 1)
-                {
-                    dataset.remove("value");
-                    dataset.insert("value", QJsonValue(fields.at(index - 1)));
-                    datasets.removeAt(j);
-                    datasets.insert(j, dataset);
-                }
-            }
-
-            // Update datasets in group
-            group.remove("datasets");
-            group.insert("datasets", datasets);
-
-            // Update group in groups array
-            groups.removeAt(i);
-            groups.insert(i, group);
-
-            // Update groups array in JSON frame
-            jsonData.remove("groups");
-            jsonData.insert("groups", groups);
+          dataset.remove(QStringLiteral("value"));
+          dataset.insert(QStringLiteral("value"), value);
+          datasets.removeAt(j);
+          datasets.insert(j, dataset);
         }
+      }
+
+      // Update datasets in group
+      group.remove(QStringLiteral("datasets"));
+      group.insert(QStringLiteral("datasets"), datasets);
+
+      // Update group in groups array
+      groups.removeAt(i);
+      groups.insert(i, group);
+
+      // Update groups array in JSON frame
+      jsonData.remove(QStringLiteral("groups"));
+      jsonData.insert(QStringLiteral("groups"), groups);
     }
+  }
 
-    // Update UI
-    if (!jsonData.isEmpty())
-        Q_EMIT jsonChanged(jsonData);
+  // Update UI
+  if (!jsonData.isEmpty())
+    Q_EMIT jsonChanged(jsonData);
 }
-
-#ifdef SERIAL_STUDIO_INCLUDE_MOC
-#    include "moc_Generator.cpp"
-#endif
